@@ -18,7 +18,8 @@ import { shareRoutes } from "./routes/shares";
 
 export async function buildApp(ctx: Ctx, opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: opts.logger ?? true,
+    // Fastify's JSON logger is unreadable in Portainer; we print one plain line per request instead.
+    logger: false,
     trustProxy: ctx.config.trustProxy,
     bodyLimit: 2 * 1024 * 1024,
   });
@@ -50,13 +51,24 @@ export async function buildApp(ctx: Ctx, opts: { logger?: boolean } = {}): Promi
     }
     const status = (err as { statusCode?: number }).statusCode;
     if (status && status < 500) return reply.status(status).send({ error: (err as Error).message, code: (err as { code?: string }).code });
-    req.log.error(err);
+    console.error(`${new Date().toISOString()} ERROR ${req.method} ${req.url}`, err);
     return reply.status(500).send({ error: "Internal error", code: "internal" });
   });
 
   app.addHook("onRequest", async (req) => {
     if (req.url.startsWith("/api/")) await resolveAuth(ctx, req);
   });
+
+  // One short line per real request; skip health checks and static assets.
+  if (opts.logger ?? true) {
+    app.addHook("onResponse", async (req, reply) => {
+      const url = req.url;
+      if (!url.startsWith("/api/") && !url.startsWith("/s/")) return;
+      const ms = Math.round(reply.elapsedTime);
+      const who = req.auth?.user ? ` ${req.auth.user.email}` : "";
+      console.log(`${new Date().toISOString()} ${req.method} ${url.split("?")[0]} ${reply.statusCode} ${ms}ms${who}`);
+    });
+  }
 
   app.get("/healthz", async () => {
     await ctx.db.execute("select 1" as never);

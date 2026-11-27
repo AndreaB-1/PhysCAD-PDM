@@ -1,0 +1,13 @@
+{
+  "id": "com.andrea.plm-lite",
+  "name": "PLM Lite",
+  "version": "2.0.0",
+  "author": "Andrea",
+  "description": "PLM Lite inside PhysCAD: shows whether the open part is checked out, and checks it in. Works with the PLM Lite agent, which uploads every save to the server.",
+  "apiVersion": 1,
+  "main": "main.js",
+  "icon": "icon.svg",
+  "permissions": ["model.read", "files", "ui"],
+  "network": [],
+  "ui": [{ "id": "panel", "title": "PLM Lite", "html": "panel.html", "place": "right" }]
+}

@@ -1,0 +1,66 @@
+name: Agent
+# Desktop agent (Windows / Linux / macOS) and PhysCAD plugin.
+# Pull requests: tests. main: tests + downloadable builds (Actions → this run → Artifacts).
+# A v* tag: also attaches the downloads to the GitHub Release.
+on:
+  pull_request:
+    paths: ["apps/agent/**", "apps/physcad-plugin/**", "apps/api/**", "packages/**", ".github/workflows/agent.yml"]
+  push:
+    branches: [main]
+    paths: ["apps/agent/**", "apps/physcad-plugin/**", ".github/workflows/agent.yml"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: agent-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: plm, POSTGRES_PASSWORD: plm, POSTGRES_DB: plm_agent_it }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U plm" --health-interval 5s --health-retries 20
+    env:
+      DATABASE_URL: postgres://plm:plm@localhost:5432/plm_agent_it
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "8.0.x" }
+      - run: npm ci
+      # the full loop against a real server and a fake PhysCAD
+      - run: apps/agent/tests/run-integration.sh
+      - run: node --check apps/physcad-plugin/main.js && node --check apps/physcad-plugin/panel.js
+
+  build:
+    if: github.event_name != 'pull_request'
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-latest, targets: "win-x64 linux-x64 plugin" }
+          - { os: macos-latest, targets: "osx-arm64 osx-x64" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "8.0.x" }
+      - run: apps/agent/build/package.sh ${{ matrix.targets }}
+      - uses: actions/upload-artifact@v4
+        with: { name: "agent-${{ matrix.os }}", path: apps/agent/dist/*, retention-days: 30 }
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: dist, merge-multiple: true }
+      - uses: softprops/action-gh-release@v2
+        with: { files: "dist/*" }

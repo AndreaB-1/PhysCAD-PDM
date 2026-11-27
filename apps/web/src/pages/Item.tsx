@@ -29,14 +29,29 @@ export type ItemDetail = {
 
 const KIND_LABEL: Record<string, string> = { native: "PhysCAD", step: "STEP", stl: "STL", glb: "GLB (3D)", png: "Picture", "3mf": "3MF", obj: "OBJ", pdf: "PDF" };
 
+/** A STEP was uploaded in the last 5 minutes and the server hasn't produced the 3D model yet. */
+function awaitingGlb(b: Baseline) {
+  return b.files.some((f) => f.kind === "step") && !b.files.some((f) => f.kind === "glb")
+    && Date.now() - new Date(b.createdAt).getTime() < 5 * 60_000;
+}
+
 export function ItemPage() {
   const { itemId } = useParams({ from: "/app/items/$itemId" });
   const me = useMe();
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["item", itemId], queryFn: () => get<ItemDetail>(`items/${itemId}`) });
+  const q = useQuery({
+    queryKey: ["item", itemId],
+    queryFn: () => get<ItemDetail>(`items/${itemId}`),
+    // While a STEP is still being converted to 3D on the server, check again every few seconds.
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      const waiting = data?.revisions.some((r) => r.baselines.some(awaitingGlb));
+      return waiting ? 4000 : false;
+    },
+  });
   const [tab, setTab] = useState<"history" | "contains" | "whereused" | "files" | "activity">("history");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [view, setView] = useState<"picture" | "3d">("picture");
+  const [viewChoice, setView] = useState<"picture" | "3d" | null>(null);
   const [dialog, setDialog] = useState<null | "checkin" | "upload" | "state" | "share" | "rename" | "cancel" | "unlock">(null);
   const [busy, setBusy] = useState(false);
   const [dl, setDl] = useState(false);
@@ -59,6 +74,9 @@ export function ItemPage() {
   };
   const png = selected?.files.find((f) => f.kind === "png");
   const glb = selected?.files.find((f) => f.kind === "glb");
+  const converting = !!selected && awaitingGlb(selected);
+  // Show the 3D model by default when there is one (or one is on its way); otherwise the picture.
+  const view = viewChoice ?? (glb || converting || !png ? "3d" : "picture");
   const openLink = `plmlite://open?server=${encodeURIComponent(location.origin)}&item=${d.item.id}${selected ? `&baseline=${selected.id}` : ""}`;
 
   return (
@@ -117,6 +135,7 @@ export function ItemPage() {
           </div>
           {view === "picture" ? <Thumb fileId={png?.id} className="aspect-[4/3] w-full" alt={d.item.number} />
             : glb ? <Suspense fallback={<div className="flex aspect-[4/3] items-center justify-center"><Spinner /></div>}><Viewer3D url={fileUrl(glb.id)} /></Suspense>
+            : converting ? <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 text-sm text-muted"><Spinner />Converting the STEP file to 3D…</div>
             : <div className="flex aspect-[4/3] items-center justify-center"><Empty icon={<Rotate3d className="size-10" />} title="No 3D model for this baseline">The desktop agent uploads a GLB at check-in. A STEP upload is converted automatically.</Empty></div>}
         </Card>
         <Card className="p-4">
