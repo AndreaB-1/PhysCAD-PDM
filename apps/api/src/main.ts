@@ -9,6 +9,7 @@ import { userCount } from "./routes/auth";
 import { randomToken } from "./lib/crypto";
 import { startWorker, JOBS } from "./worker";
 import { rebuildFromDisk } from "./lib/rebuild";
+import { ensureSecret } from "./lib/settings";
 
 async function main() {
   const config = loadConfig();
@@ -26,6 +27,7 @@ async function main() {
     await startup`select pg_advisory_unlock(727001)`; startup.release();
     throw e;
   }
+  config.sessionSecret = await ensureSecret(db, config.sessionSecret);
   if (cmd === "migrate") { console.log("migrations applied"); await client.end(); return; }
   if (cmd === "rebuild") {
     await startup`select pg_advisory_unlock(727001)`; startup.release();
@@ -49,7 +51,7 @@ async function main() {
   if ((await userCount(ctx)) === 0) {
     ctx.setupToken = process.env.SETUP_TOKEN || randomToken(9);
     console.log("\n==========================================================");
-    console.log(" PLM Lite first run: open " + config.appUrl + "/setup");
+    console.log(" PLM Lite first run: open http://<this-server>:" + config.port + "/setup");
     console.log(" Setup token: " + ctx.setupToken);
     console.log("==========================================================\n");
   }

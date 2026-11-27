@@ -4,7 +4,7 @@ import { z } from "zod";
 import { shareCreateSchema } from "@plm/shared";
 import { baselines, files, items, revisions, shareLinks, states, users, vaults } from "../db/schema";
 import type { Ctx } from "../lib/context";
-import { requireUser, requireVaultRole, vaultRole } from "../lib/auth";
+import { originOf, requireUser, requireVaultRole, vaultRole } from "../lib/auth";
 import { hashPassword, randomToken, sha256, signGrant, verifyGrant, verifyPassword } from "../lib/crypto";
 import { badRequest, forbidden, notFound, unauthorized } from "../lib/errors";
 import { logAudit } from "../lib/audit";
@@ -68,7 +68,7 @@ export async function shareRoutes(app: FastifyInstance, ctx: Ctx) {
       maxDownloads: body.maxDownloads ?? null, note: body.note ?? null, createdBy: user.id,
     }).returning();
     await logAudit(ctx, req, "share.created", { vaultId: item.vaultId, itemId: item.id, details: { shareId: s!.id, target: body.target, formats: body.formats, expiresInDays: days, password: !!body.password } });
-    return { id: s!.id, url: `${ctx.config.publicShareUrl}/s/${token}` };
+    return { id: s!.id, url: `${ctx.config.publicShareUrl || originOf(ctx, req)}/s/${token}` };
   });
 
   app.get<{ Querystring: { all?: string; itemId?: string } }>("/shares", async (req) => {

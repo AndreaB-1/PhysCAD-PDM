@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 
 function env(name: string, def?: string): string {
   const v = process.env[name];
@@ -12,11 +11,11 @@ function env(name: string, def?: string): string {
 export type Config = ReturnType<typeof loadConfig>;
 
 export function loadConfig() {
-  const appUrl = env("APP_URL", "http://localhost:8080").replace(/\/$/, "");
+  // Optional: without APP_URL the app uses the address the browser used to reach it.
+  const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+  // Optional: without SESSION_SECRET one is generated on first start and kept in the database.
   const sessionSecret = process.env.SESSION_SECRET || "";
-  if (sessionSecret.length < 32 && process.env.NODE_ENV === "production") {
-    throw new Error("SESSION_SECRET must be at least 32 characters");
-  }
+  if (sessionSecret && sessionSecret.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");
   const dbUrl =
     process.env.DATABASE_URL ||
     `postgres://${encodeURIComponent(env("DB_USER", "plm"))}:${encodeURIComponent(env("DB_PASSWORD", "plm"))}@${env("DB_HOST", "localhost")}:${env("DB_PORT", "5432")}/${env("DB_NAME", "plm")}`;
@@ -24,9 +23,9 @@ export function loadConfig() {
     role: env("ROLE", "app") as "app" | "worker" | "all",
     port: parseInt(env("PORT", "8080"), 10),
     appUrl,
-    publicShareUrl: (process.env.PUBLIC_SHARE_URL || appUrl).replace(/\/$/, ""),
+    publicShareUrl: (process.env.PUBLIC_SHARE_URL || "").replace(/\/$/, ""),
     secureCookies: appUrl.startsWith("https://"),
-    sessionSecret: sessionSecret || randomBytes(32).toString("hex"),
+    sessionSecret,
     dbUrl,
     vaultsRoot: env("VAULTS_ROOT", "/vaults"),
     dataDir: env("DATA_DIR", "/data"),

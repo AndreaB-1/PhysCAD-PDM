@@ -1,0 +1,54 @@
+# PLM Lite: test stack. Paste into Portainer → Stacks → Add stack → Web editor, then Deploy.
+# Nothing to fill in. Open http://<docker-host>:8080 afterwards.
+# Vaults are kept in a Docker volume on this host (not the NAS yet).
+
+services:
+  app:
+    image: ghcr.io/andreab-1/physcad-pdm:latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "8080:8080"
+    environment:
+      ROLE: app
+      DB_HOST: db
+      DB_PASSWORD: plm-test
+    volumes:
+      - vaults:/vaults
+      - app-data:/data
+
+  worker:
+    image: ghcr.io/andreab-1/physcad-pdm:latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      app: { condition: service_started }
+    environment:
+      ROLE: worker
+      DB_HOST: db
+      DB_PASSWORD: plm-test
+    volumes:
+      - vaults:/vaults
+      - app-data:/data
+    healthcheck: { disable: true }
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: plm
+      POSTGRES_USER: plm
+      POSTGRES_PASSWORD: plm-test   # only reachable inside this stack
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plm -d plm"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  vaults:
+  app-data:
+  db-data:

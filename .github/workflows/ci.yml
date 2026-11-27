@@ -1,8 +1,13 @@
 name: CI
 on:
-  push:
-    branches: ["**"]
   pull_request:
+  push:
+    branches: [main]
+
+# a newer commit on the same branch cancels the older run
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -25,6 +30,8 @@ jobs:
       - run: npm run build
 
   image:
+    # on main the release workflow builds (and publishes) the image instead
+    if: github.event_name == 'pull_request'
     needs: test
     runs-on: ubuntu-latest
     steps:

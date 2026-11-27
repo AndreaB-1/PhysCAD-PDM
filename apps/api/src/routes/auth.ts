@@ -6,7 +6,7 @@ import { z } from "zod";
 import { loginSchema, mfaSchema, setupSchema } from "@plm/shared";
 import { apiTokens, deviceCodes, sessions, users } from "../db/schema";
 import type { Ctx, User } from "../lib/context";
-import { createSession, requireUser, SESSION_COOKIE } from "../lib/auth";
+import { createSession, originOf, requireUser, SESSION_COOKIE } from "../lib/auth";
 import { decrypt, encrypt, hashPassword, randomToken, sha256, verifyPassword } from "../lib/crypto";
 import { badRequest, conflict, forbidden, unauthorized } from "../lib/errors";
 import { logAudit } from "../lib/audit";
@@ -232,7 +232,7 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
     for (let i = 0; i < 8; i++) userCode += alphabet[bytes.charCodeAt(i) % alphabet.length];
     userCode = `${userCode.slice(0, 4)}-${userCode.slice(4)}`;
     await ctx.db.insert(deviceCodes).values({ deviceCodeHash: sha256(deviceCode), userCode, clientName, expiresAt: new Date(Date.now() + 10 * 60_000) });
-    return { deviceCode, userCode, verificationUri: `${ctx.config.appUrl}/device`, verificationUriComplete: `${ctx.config.appUrl}/device?code=${userCode}`, interval: 3, expiresIn: 600 };
+    return { deviceCode, userCode, verificationUri: `${originOf(ctx, req)}/device`, verificationUriComplete: `${originOf(ctx, req)}/device?code=${userCode}`, interval: 3, expiresIn: 600 };
   });
 
   app.post("/device/token", { config: { rateLimit: { max: 40, timeWindow: "1 minute" } } }, async (req, reply) => {
