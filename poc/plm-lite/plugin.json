@@ -1,0 +1,12 @@
+{
+  "id": "com.andrea.plm-lite",
+  "name": "PLM Lite",
+  "version": "0.2.0",
+  "author": "Andrea",
+  "description": "Revision control with the PLM Lite Vault Viewer: every save of a part (AB00000 - DESCRIPTION) records a baseline like 01.003, and assemblies record which part baselines they use.",
+  "apiVersion": 1,
+  "main": "main.js",
+  "icon": "icon.svg",
+  "permissions": ["model.read", "view", "files", "ui"],
+  "network": []
+}

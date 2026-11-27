@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!-- saved from url=(0048)https://physcad.io/plugin-guide/index.html#start -->
+<html lang="en" data-theme="auto"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhysCAD Plugin Guide</title>
+<meta name="description" content="How to build, test and share a PhysCAD plugin.">
+<style>
+:root { --bg:#1b1d21; --panel:#23262b; --panel2:#2b2f35; --line:#363a41; --text:#e6e8eb; --muted:#9aa0a8; --accent:#4c8df5; --kbd:#30343b; --code:#15171a; }
+@media (prefers-color-scheme: light) { :root[data-theme=auto] { --bg:#f6f7f9; --panel:#fff; --panel2:#f0f2f5; --line:#dde1e6; --text:#1c1f24; --muted:#5f6670; --accent:#2f6fdf; --kbd:#e9ecf0; --code:#f3f5f8; } }
+* { box-sizing:border-box }
+html,body { margin:0; background:var(--bg); color:var(--text); font:15px/1.6 -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif }
+a { color:var(--accent); text-decoration:none } a:hover { text-decoration:underline }
+.wrap { display:grid; grid-template-columns:240px minmax(0,1fr); min-height:100vh }
+nav { position:sticky; top:0; height:100vh; overflow:auto; padding:18px 14px; background:var(--panel); border-right:1px solid var(--line) }
+nav .brand { font-weight:700; font-size:18px; margin:4px 6px 16px }
+nav .brand span { display:block; color:var(--muted); font-weight:400; font-size:13px }
+nav a { display:block; padding:6px 10px; border-radius:7px; color:var(--text) }
+nav a:hover { background:var(--panel2); text-decoration:none }
+main { padding:28px 40px 80px; max-width:900px }
+h1 { margin:0 0 6px; font-size:30px }
+.lead { color:var(--muted); margin:0 0 28px }
+h2 { font-size:22px; margin:40px 0 8px; padding-top:14px; border-top:1px solid var(--line) }
+h3 { font-size:17px; margin:22px 0 6px }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:12px 0 }
+.note { color:var(--muted) }
+code { font:13px ui-monospace, Menlo, Consolas, monospace; background:var(--kbd); padding:1px 5px; border-radius:5px }
+pre { background:var(--code); border:1px solid var(--line); border-radius:10px; padding:14px 16px; overflow:auto; font:13px/1.5 ui-monospace, Menlo, Consolas, monospace }
+pre code { background:none; padding:0 }
+table { border-collapse:collapse; width:100%; margin:8px 0 }
+th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top }
+th { color:var(--muted); font-weight:600; font-size:13px }
+ol li, ul li { margin:4px 0 }
+.dl { display:inline-block; margin:6px 0; padding:9px 14px; border-radius:8px; background:var(--accent); color:#fff; font-weight:600 }
+.dl:hover { text-decoration:none; opacity:.9 }
+@media (max-width: 760px) { .wrap { grid-template-columns:1fr } nav { position:static; height:auto } main { padding:20px 16px 60px } }
+</style></head>
+<body><div class="wrap">
+<nav>
+  <div class="brand">PhysCAD<span>Plugin Guide</span></div>
+  <a href="https://physcad.io/plugin-guide/index.html#start">Getting started</a>
+  <a href="https://physcad.io/plugin-guide/index.html#files">What a plugin is made of</a>
+  <a href="https://physcad.io/plugin-guide/index.html#manifest">plugin.json</a>
+  <a href="https://physcad.io/plugin-guide/index.html#main">main.js</a>
+  <a href="https://physcad.io/plugin-guide/index.html#panel">Panels</a>
+  <a href="https://physcad.io/plugin-guide/index.html#api">The API</a>
+  <a href="https://physcad.io/plugin-guide/index.html#permissions">Permissions</a>
+  <a href="https://physcad.io/plugin-guide/index.html#rules">Rules</a>
+  <a href="https://physcad.io/plugin-guide/index.html#testing">Testing (Developer mode)</a>
+  <a href="https://physcad.io/plugin-guide/index.html#ai">Building one with an AI</a>
+  <a href="https://physcad.io/plugin-guide/index.html#share">Sharing your plugin</a>
+  <a href="https://physcad.io/guide/index.html">User Guide</a>
+</nav>
+<main>
+<h1>Building a PhysCAD plugin</h1>
+<p class="lead">Plugins add your own commands, toolbar buttons and panels to PhysCAD. They are plain JavaScript, run in a sandbox, and need no build tools. Plugins are a Labs feature: they may change as we go.</p>
+
+<h2 id="start">Getting started</h2>
+<ol>
+  <li>In PhysCAD, open Preferences, Labs and turn on <b>Third-party plugins</b>.</li>
+  <li>Download the example plugin and install it: Preferences, Plugins, <b>Install plugin…</b>, then pick the file.<br>
+    <a class="dl" href="https://physcad.io/plugin-guide/hello-box.physcadplugin" download="">Download Hello Box (example)</a></li>
+  <li>Click its toolbar button, type a size and click <b>Make box</b>. That is a whole plugin: a command, a button and a panel.</li>
+  <li>Unzip the file (it is a normal zip) to see its five small files, then change them to make your own.</li>
+</ol>
+
+<h2 id="files">What a plugin is made of</h2>
+<p>A plugin is a folder with these files. To share it, zip the folder's contents and rename the zip to <code>name.physcadplugin</code>.</p>
+<table>
+  <tbody><tr><th>File</th><th>What it is</th></tr>
+  <tr><td><code>plugin.json</code></td><td>Its name, id, version, permissions and panels.</td></tr>
+  <tr><td><code>main.js</code></td><td>Its code: registers commands and toolbar buttons.</td></tr>
+  <tr><td><code>panel.html</code>, <code>panel.js</code></td><td>A panel (optional), with the code behind it.</td></tr>
+  <tr><td><code>icon.svg</code></td><td>Its icon (optional).</td></tr>
+</tbody></table>
+
+<h2 id="manifest">plugin.json</h2>
+<pre><code>{
+  "id": "com.yourname.hello-box",
+  "name": "Hello Box",
+  "version": "1.0.0",
+  "author": "Your name",
+  "description": "One or two plain sentences: what it does.",
+  "apiVersion": 1,
+  "main": "main.js",
+  "icon": "icon.svg",
+  "permissions": ["model.write", "ui"],
+  "network": [],
+  "ui": [{ "id": "panel", "title": "Hello Box", "html": "panel.html", "place": "right" }],
+  "translations": { "de": { "Make box": "Box erstellen" } }
+}</code></pre>
+<ul>
+  <li><b>id</b>: reverse-domain, lower case, unique to you (<code>com.yourname.thing</code>).</li>
+  <li><b>version</b>: x.y.z. Raise it every time you share a new copy.</li>
+  <li><b>place</b>: <code>"right"</code> (the right-hand column) or <code>"floating"</code> (with <code>width</code> and <code>height</code> in px).</li>
+  <li>Unknown fields are refused, so a typo shows up as an error when installing.</li>
+</ul>
+
+<h2 id="main">main.js</h2>
+<p>This is the whole Hello Box plugin. It registers a command that makes a cube, and a toolbar button that opens its panel.</p>
+<pre><code>physcad.commands.register({
+  id: "makeBox",
+  title: "Make box",
+  description: "Make a cube at the origin. size: its edge length in mm.",
+  params: { type: "object", properties: { size: { type: "number" } }, additionalProperties: false },
+  async run({ size = 20 }) {
+    if (!(size &gt; 0)) throw new Error("The size must be more than 0");
+    await physcad.commands.run("model.box", { origin: [0, 0, 0], size: [size, size, size] });
+    await physcad.storage.set("lastSize", size);
+    await physcad.ui.toast(physcad.tx("Made a {0} mm box", size), "success");
+    return { size };
+  },
+});
+physcad.commands.register({ id: "open", title: "Hello Box", run: () =&gt; physcad.ui.openPanel("panel") });
+physcad.ui.addToolbarButton({ command: "open", tip: physcad.tx("Hello Box") });</code></pre>
+<p>Everything one command changes in the model is <b>one Undo step</b>, named after your plugin.</p>
+
+<h2 id="panel">Panels</h2>
+<p>Panels use PhysCAD's own look through a small UI kit, so your controls look and work like the app's.</p>
+<pre><code>&lt;p class="note"&gt;Makes a cube at the origin.&lt;/p&gt;
+&lt;pc-row label="Size"&gt;&lt;pc-number id="size" kind="length" value="20" min="0.01"&gt;&lt;/pc-number&gt;&lt;/pc-row&gt;
+&lt;div class="actions"&gt;&lt;button class="primary" id="make"&gt;Make box&lt;/button&gt;&lt;/div&gt;
+&lt;script src="panel.js"&gt;&lt;/script&gt;</code></pre>
+<pre><code>const size = document.getElementById("size"), make = document.getElementById("make");
+physcad.storage.get("lastSize").then((v) =&gt; { if (typeof v === "number") size.value = v; });
+make.addEventListener("click", async () =&gt; {
+  try { await physcad.commands.run("makeBox", { size: size.value }); }
+  catch (e) { await physcad.ui.toast(e.message, "error"); }
+});</code></pre>
+<ul>
+  <li><code>&lt;pc-number&gt;</code> is the app's value box: you can drag it, step it with the arrow keys, and it shows the document's units. Its <code>.value</code> is always in mm. Listen to <code>input</code> (while dragging) or <code>change</code> (when set). It takes <code>min</code>, <code>max</code> and <code>step</code>.</li>
+  <li>Also in the kit: <code>&lt;pc-row&gt;</code>, <code>&lt;pc-segmented&gt;</code>, <code>&lt;button class="primary"&gt;</code>, <code>&lt;div class="actions"&gt;</code>.</li>
+  <li>Inline handlers like <code>onclick="..."</code> don't run. Put your code in a <code>&lt;script src="panel.js"&gt;</code>.</li>
+</ul>
+
+<h2 id="api">The API</h2>
+<p>Everything is on the global <code>physcad</code>, and every call returns a Promise.</p>
+<table>
+  <tbody><tr><th>Call</th><th>What it does</th></tr>
+  <tr><td><code>physcad.commands.register({...})</code></td><td>Adds a command of your own.</td></tr>
+  <tr><td><code>physcad.commands.run(name, args)</code></td><td>Runs any PhysCAD command your permissions allow (<code>model.box</code>, <code>model.extrude</code>, <code>sketch.create</code>, <code>cam.*</code>, ...), or one of your own by its short name.</td></tr>
+  <tr><td><code>physcad.ui.addToolbarButton</code>, <code>openPanel</code>, <code>closePanel</code>, <code>toast</code></td><td>Buttons, panels and messages.</td></tr>
+  <tr><td><code>physcad.model.selection()</code>, <code>document()</code></td><td>Reads what's picked and the document.</td></tr>
+  <tr><td><code>physcad.events.on(name, fn)</code></td><td><code>selectionChanged</code>, <code>documentOpened</code>, <code>documentSaved</code>, <code>toolChanged</code>, <code>unitsChanged</code>.</td></tr>
+  <tr><td><code>physcad.storage.get/set/remove/keys</code></td><td>Your plugin's own saved settings (256 KB).</td></tr>
+  <tr><td><code>physcad.files.open/save/pickFolder/read/write/list</code></td><td>Files, through PhysCAD's dialogs or folders the person approved.</td></tr>
+  <tr><td><code>physcad.net.fetch(url, options)</code></td><td>Internet access to the domains you list (desktop app only).</td></tr>
+  <tr><td><code>physcad.units()</code>, <code>physcad.tx(text)</code></td><td>The document's units, and your translations.</td></tr>
+</tbody></table>
+<p class="note">PhysCAD's commands are the same as its AI (MCP) tools, so the tool list your AI assistant sees is also the list of commands a plugin can run.</p>
+
+<h2 id="permissions">Permissions</h2>
+<p>Ask only for what you use. People see the list in plain words before they install.</p>
+<table>
+  <tbody><tr><th>Permission</th><th>Lets the plugin</th></tr>
+  <tr><td><code>model.read</code></td><td>See the document and the selection, inspect bodies.</td></tr>
+  <tr><td><code>model.write</code></td><td>Change the model.</td></tr>
+  <tr><td><code>cam</code></td><td>Work with CAM setups and toolpaths.</td></tr>
+  <tr><td><code>view</code></td><td>Move the camera and change the selection.</td></tr>
+  <tr><td><code>files</code></td><td>Open and save files.</td></tr>
+  <tr><td><code>ui</code></td><td>Add toolbar buttons and panels.</td></tr>
+  <tr><td><code>network</code></td><td>Reach the https domains listed in <code>"network"</code>.</td></tr>
+</tbody></table>
+<p class="note">Plugins can never change PhysCAD's settings, other plugins or the license.</p>
+
+<h2 id="rules">Rules</h2>
+<ul>
+  <li><b>One file of code.</b> <code>main.js</code> is a single script: <code>import</code> and <code>require</code> don't work. TypeScript is fine if you compile it to one file.</li>
+  <li><b>No page, no Node, no direct internet in main.js.</b> It runs in a sandboxed worker. Use <code>physcad.net.fetch</code> for the internet.</li>
+  <li><b>Lengths are mm and angles are degrees</b> in every command, whatever units the document shows.</li>
+  <li><b>Don't block.</b> A plugin silent for 15 seconds, or one command running past 60 seconds, is stopped. Five errors in a minute stop it too, and a plugin stopped three times is turned off. Do long work in pieces with <code>await</code>.</li>
+  <li><b>Check your inputs</b> and throw short, plain errors ("The size must be more than 0").</li>
+</ul>
+
+<h2 id="testing">Testing (Developer mode)</h2>
+<ol>
+  <li>Keep your plugin as a folder while you work on it.</li>
+  <li>In Preferences, Plugins, click <b>Developer: load from folder…</b> and pick the folder.</li>
+  <li>Edit the files: PhysCAD reloads the plugin each time you save. Errors show under the plugin in Preferences, Plugins.</li>
+</ol>
+
+<h2 id="ai">Building one with an AI</h2>
+<p>You don't need to be a programmer. Point your AI assistant at this page, describe what you want the plugin to do, and ask it to write the files. If your assistant is connected to PhysCAD through MCP, it can load your plugin folder in Developer mode, test its commands and read its errors itself.</p>
+
+<h2 id="share">Sharing your plugin</h2>
+<ol>
+  <li>Zip the folder's contents (plugin.json at the top of the zip) and rename it to <code>yourplugin.physcadplugin</code>.</li>
+  <li>Post it in the <b>plugins</b> forum on the PhysCAD Discord: one thread per plugin, with what it does and a screenshot. Questions and updates go in the same thread.</li>
+  <li>Others install it with Preferences, Plugins, <b>Install plugin…</b>. Plugins that aren't signed by PhysCAD show a warning before they install, so only install plugins from people you trust.</li>
+</ol>
+</main>
+</div>
+</body></html>
