@@ -8,6 +8,11 @@ import type { VaultRole } from "@plm/shared";
 
 export const SESSION_COOKIE = "plm_session";
 
+/** The app's address: APP_URL if set, otherwise the address this request came in on. */
+export function originOf(ctx: Ctx, req: FastifyRequest) {
+  return ctx.config.appUrl || `${req.protocol}://${req.host}`;
+}
+
 export async function createSession(ctx: Ctx, req: FastifyRequest, reply: FastifyReply, user: User, mfaPassed: boolean) {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + ctx.config.sessionMaxDays * 86400_000);
@@ -16,7 +21,7 @@ export async function createSession(ctx: Ctx, req: FastifyRequest, reply: Fastif
     ip: req.ip, userAgent: String(req.headers["user-agent"] ?? "").slice(0, 300), expiresAt,
   }).returning();
   reply.setCookie(SESSION_COOKIE, token, {
-    path: "/", httpOnly: true, sameSite: "lax", secure: ctx.config.secureCookies, expires: expiresAt,
+    path: "/", httpOnly: true, sameSite: "lax", secure: ctx.config.secureCookies || req.protocol === "https", expires: expiresAt,
   });
   return s!;
 }

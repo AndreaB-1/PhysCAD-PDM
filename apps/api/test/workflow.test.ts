@@ -208,6 +208,21 @@ describe("pdm workflow", () => {
   });
 });
 
+describe("zero config", () => {
+  it("builds share links from the address the browser used", async () => {
+    const d = await admin.json("GET", `/api/vaults/${vaultId}/items/by-number/AB00001`);
+    const r = await admin.req("POST", "/api/shares", { target: "latest_released", itemId: d.item.id, formats: ["png"], expiresInDays: 3 }, { host: "nas.lan:8080" });
+    expect(r.json().url).toMatch(/^http:\/\/nas\.lan:8080\/s\//);
+  });
+  it("generates the secret once and keeps it", async () => {
+    const { ensureSecret } = await import("../src/lib/settings");
+    const a = await ensureSecret(env.ctx.db, "");
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(await ensureSecret(env.ctx.db, "")).toBe(a);
+    expect(await ensureSecret(env.ctx.db, "x".repeat(40))).toBe("x".repeat(40));
+  });
+});
+
 describe("glb", () => {
   it("writes a valid GLB header", () => {
     const glb = meshesToGlb([{ attributes: { position: { array: [0, 0, 0, 1, 0, 0, 0, 1, 0] } }, index: { array: [0, 1, 2] } }]);

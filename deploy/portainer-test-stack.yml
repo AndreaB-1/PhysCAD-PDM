@@ -1,12 +1,6 @@
-# PLM Lite: TEST stack for Portainer (Stacks → Add stack → Web editor).
-# Vaults live in a Docker volume on this host instead of the NAS.
-# For the NAS later, see the main docker-compose.yml (VAULTS_PATH bind mount).
-#
-# Environment variables to set in Portainer (Advanced mode lets you paste them):
-#   APP_URL=http://<docker-host-ip>:8080
-#   SESSION_SECRET=<64 random hex characters>
-#   DB_PASSWORD=<random>
-name: plm-lite-test
+# PLM Lite: test stack. Paste into Portainer → Stacks → Add stack → Web editor, then Deploy.
+# Nothing to fill in. Open http://<docker-host>:8080 afterwards.
+# Vaults are kept in a Docker volume on this host (not the NAS yet).
 
 services:
   app:
@@ -16,15 +10,10 @@ services:
       db: { condition: service_healthy }
     ports:
       - "8080:8080"
-    environment: &env
+    environment:
       ROLE: app
-      APP_URL: ${APP_URL}
-      SESSION_SECRET: ${SESSION_SECRET}
       DB_HOST: db
-      DB_NAME: plm
-      DB_USER: plm
-      DB_PASSWORD: ${DB_PASSWORD}
-      TZ: Europe/Rome
+      DB_PASSWORD: plm-test
     volumes:
       - vaults:/vaults
       - app-data:/data
@@ -36,8 +25,9 @@ services:
       db: { condition: service_healthy }
       app: { condition: service_started }
     environment:
-      <<: *env
       ROLE: worker
+      DB_HOST: db
+      DB_PASSWORD: plm-test
     volumes:
       - vaults:/vaults
       - app-data:/data
@@ -49,7 +39,7 @@ services:
     environment:
       POSTGRES_DB: plm
       POSTGRES_USER: plm
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: plm-test   # only reachable inside this stack
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:

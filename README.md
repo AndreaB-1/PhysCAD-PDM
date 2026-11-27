@@ -17,15 +17,15 @@ The plan, decisions and everything learned about PhysCAD's plugin and MCP APIs a
 
 ## Deploy in Portainer
 
-**Just testing?** Use [`deploy/portainer-test-stack.yml`](deploy/portainer-test-stack.yml): vaults live in a Docker volume, and only `APP_URL`, `SESSION_SECRET` and `DB_PASSWORD` need setting. The steps below are for the real setup with vaults on the NAS.
+**Just testing?** Use [`deploy/portainer-test-stack.yml`](deploy/portainer-test-stack.yml): paste it into Portainer and deploy, nothing to fill in. Vaults live in a Docker volume. The steps below are for the real setup with vaults on the NAS.
 
 1. **Stacks → Add stack**, paste [`docker-compose.yml`](docker-compose.yml).
 2. Set the environment variables (see [`.env.example`](.env.example)):
 
    | Variable | Example | |
    |---|---|---|
-   | `APP_URL` | `http://nas.lan:8080` | how browsers reach the app; `https://…` turns on Secure cookies and HSTS |
-   | `SESSION_SECRET` | `openssl rand -hex 32` | keep it: changing it signs everyone out and breaks enrolled 2FA |
+   | `APP_URL` | optional | only needed to force https behind a proxy; otherwise the browser's address is used |
+   | `SESSION_SECRET` | optional | generated and stored in the database if not set |
    | `DB_PASSWORD` | random | |
    | `VAULTS_PATH` | `/mnt/user/pdm-vaults` | NAS folder holding the vaults (each sub-folder can be a vault) |
    | `ADMIN_EMAIL` | optional | only this email may create the first admin |
