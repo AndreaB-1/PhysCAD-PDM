@@ -75,6 +75,23 @@ public class McpTests
         Assert.Equal(new[] { "glb", "png", "step" }, files.Keys.OrderBy(k => k));
     }
 
+    [Theory]
+    [InlineData("{\"__image\":\"data:image/png;base64,PNG\"}")]
+    [InlineData("\"data:image/png;base64,PNG\"")]
+    [InlineData("{\"image\":{\"data\":\"PNG\",\"mimeType\":\"image/png\"}}")]
+    [InlineData("{\"result\":{\"png\":\"PNG\"}}")]
+    [InlineData("\"{\\\"__image\\\":\\\"data:image/png;base64,PNG\\\"}\"")]
+    public void FindsPicturesInAnyShape(string json)
+    {
+        var node = JsonNode.Parse(json.Replace("PNG", FakePhysCad.Png));
+        var bytes = PhysCad.FindImage(node);
+        Assert.NotNull(bytes);
+        Assert.Equal(0x89, bytes![0]); // PNG signature
+    }
+
+    [Fact]
+    public void NoPictureIsNull() => Assert.Null(PhysCad.FindImage(JsonNode.Parse("{\"ok\":true}")));
+
     [Fact]
     public async Task ReportsPhysCadNotRunning()
     {

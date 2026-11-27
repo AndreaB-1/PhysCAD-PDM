@@ -41,6 +41,18 @@ public sealed class AgentService : IDisposable
     void Say(string text, NoticeLevel level = NoticeLevel.Info) => Notice?.Invoke(text, level);
     public void RaiseError(string text) => Say(text, NoticeLevel.Error);
 
+    /// <summary>Details that don't deserve a notification go to &lt;workspace&gt;/.plm/agent.log.</summary>
+    public void Log(string text)
+    {
+        try
+        {
+            var f = Path.Combine(Workspace.Meta, "agent.log");
+            if (File.Exists(f) && new FileInfo(f).Length > 1_000_000) File.Move(f, f + ".old", true);
+            File.AppendAllText(f, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {text}{Environment.NewLine}");
+        }
+        catch { }
+    }
+
     ApiClient RequireApi() => Api ?? throw new InvalidOperationException("Not signed in. Choose “Sign in…” in the tray menu first.");
 
     // ---------------------------------------------------------------- sign-in
@@ -341,7 +353,7 @@ public sealed class AgentService : IDisposable
             var active = await PhysCad.ActiveFile();
             if (active is null || !PhysCad.SamePath(active, path)) return;
             var dir = Path.Combine(Workspace.TmpDir, b.Id);
-            var files = await PhysCad.ExportDerived(dir, Path.GetFileNameWithoutExtension(path));
+            var files = await PhysCad.ExportDerived(dir, Path.GetFileNameWithoutExtension(path), m => Log($"{copy.Number} {b.Label}: {m}"));
             if (files.Count > 0) await RequireApi().AttachFiles(b.Id, files);
             try { Directory.Delete(dir, true); } catch { }
         }

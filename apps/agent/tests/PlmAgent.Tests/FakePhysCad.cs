@@ -19,7 +19,7 @@ public sealed class FakePhysCad : IDisposable
     public string SessionId { get; } = Guid.NewGuid().ToString("N");
 
     // A 1×1 PNG.
-    const string Png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    public const string Png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
     public FakePhysCad()
     {
@@ -75,7 +75,11 @@ public sealed class FakePhysCad : IDisposable
             "view_capture" => new JsonObject { ["__image"] = "data:image/png;base64," + Png },
             _ => throw new InvalidOperationException("unknown tool " + tool),
         };
-        var payload = Reply(msg, new JsonObject { ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = result.ToJsonString() }) });
+        // Pictures come back as MCP image content, like a real MCP server sends them.
+        var content = tool == "view_capture"
+            ? new JsonObject { ["type"] = "image", ["data"] = Png, ["mimeType"] = "image/png" }
+            : new JsonObject { ["type"] = "text", ["text"] = result.ToJsonString() };
+        var payload = Reply(msg, new JsonObject { ["content"] = new JsonArray(content) });
         res.ContentType = "text/event-stream";
         await Write(res, $"event: message\ndata: {payload.ToJsonString()}\n\n", "text/event-stream");
     }

@@ -50,8 +50,13 @@ public sealed class McpClient : IDisposable
                 await EnsureInitializedLocked();
                 result = await Request("tools/call", new JsonObject { ["name"] = tool, ["arguments"] = ToNode(args) ?? new JsonObject() });
             }
-            var text = result?["content"]?.AsArray().OfType<JsonObject>().FirstOrDefault(c => (string?)c["type"] == "text")?["text"]?.GetValue<string>();
+            var content = result?["content"] as JsonArray;
+            var text = content?.OfType<JsonObject>().FirstOrDefault(c => (string?)c["type"] == "text")?["text"]?.GetValue<string>();
             if (result?["isError"]?.GetValue<bool>() == true) throw new McpException($"{tool}: {text ?? "error"}");
+            // MCP image content ({type:"image", data, mimeType}) is returned as {"__image": "data:…;base64,…"}.
+            var image = content?.OfType<JsonObject>().FirstOrDefault(c => (string?)c["type"] == "image");
+            if (image is not null)
+                return new JsonObject { ["__image"] = $"data:{(string?)image["mimeType"] ?? "image/png"};base64,{(string?)image["data"]}" };
             if (result?["structuredContent"] is JsonNode sc) return sc.DeepClone();
             if (text is null) return result?.DeepClone();
             try { return JsonNode.Parse(text); } catch { return JsonValue.Create(text); }
@@ -217,29 +222,71 @@ public sealed class PhysCad(McpClient mcp)
         await Mcp.Call("document_saveAs", new Dictionary<string, object?> { ["path"] = path });
     }
 
-    /// <summary>Export STEP, GLB and a picture of the active document into <paramref name="folder"/>. Missing exports are skipped.</summary>
-    public async Task<Dictionary<string, string>> ExportDerived(string folder, string baseName)
+    /// <summary>Export STEP, GLB and a picture of the active document into <paramref name="folder"/>. Missing exports are skipped (and logged).</summary>
+    public async Task<Dictionary<string, string>> ExportDerived(string folder, string baseName, Action<string>? log = null)
     {
         Directory.CreateDirectory(folder);
         var outFiles = new Dictionary<string, string>();
         var step = Path.Combine(folder, baseName + ".step");
         var glb = Path.Combine(folder, baseName + ".glb");
         var png = Path.Combine(folder, baseName + ".png");
-        try { await Mcp.Call("file_exportStep", new Dictionary<string, object?> { ["path"] = step }); if (File.Exists(step)) outFiles["step"] = step; } catch { }
-        try { await Mcp.Call("file_export", new Dictionary<string, object?> { ["format"] = "glb", ["path"] = glb }); if (File.Exists(glb)) outFiles["glb"] = glb; } catch { }
+        try { await Mcp.Call("file_exportStep", new Dictionary<string, object?> { ["path"] = step }); if (File.Exists(step)) outFiles["step"] = step; else log?.Invoke("STEP export wrote no file"); }
+        catch (Exception e) { log?.Invoke("STEP export failed: " + e.Message); }
+        try { await Mcp.Call("file_export", new Dictionary<string, object?> { ["format"] = "glb", ["path"] = glb }); if (File.Exists(glb)) outFiles["glb"] = glb; else log?.Invoke("GLB export wrote no file"); }
+        catch (Exception e) { log?.Invoke("GLB export failed: " + e.Message); }
         try
         {
             try { await Mcp.Call("component_activate", new Dictionary<string, object?> { ["id"] = "root" }); } catch { }
             var cap = await Mcp.Call("view_capture", new Dictionary<string, object?> { ["width"] = 800, ["height"] = 600 });
-            var dataUrl = (string?)cap?["__image"] ?? (string?)cap?["image"] ?? (cap is JsonValue v && v.TryGetValue(out string? s) ? s : null);
-            if (dataUrl is not null && dataUrl.Contains("base64,"))
-            {
-                await File.WriteAllBytesAsync(png, Convert.FromBase64String(dataUrl[(dataUrl.IndexOf("base64,", StringComparison.Ordinal) + 7)..]));
-                outFiles["png"] = png;
-            }
+            var bytes = FindImage(cap);
+            if (bytes is not null) { await File.WriteAllBytesAsync(png, bytes); outFiles["png"] = png; }
+            else log?.Invoke("view_capture returned no image: " + Truncate(cap?.ToJsonString(), 300));
         }
-        catch { }
+        catch (Exception e) { log?.Invoke("Picture failed: " + e.Message); }
         return outFiles;
+    }
+
+    static string Truncate(string? s, int n) => s is null ? "null" : s.Length <= n ? s : s[..n] + "…";
+
+    /// <summary>
+    /// Find a picture anywhere in a tool result: a data: URL, a base64 PNG/JPEG string, or {data, mimeType:"image/…"}.
+    /// </summary>
+    internal static byte[]? FindImage(JsonNode? node)
+    {
+        switch (node)
+        {
+            case null: return null;
+            case JsonValue v when v.TryGetValue(out string? s):
+                return DecodeImage(s);
+            case JsonObject o:
+                if (o["data"] is JsonValue dv && dv.TryGetValue(out string? data) && ((string?)o["mimeType"] ?? (string?)o["mime"] ?? "").StartsWith("image/"))
+                    return TryBase64(data);
+                foreach (var key in new[] { "__image", "image", "dataUrl", "png", "data" })
+                    if (FindImage(o[key]) is { } b) return b;
+                foreach (var (_, child) in o) if (FindImage(child) is { } b) return b;
+                return null;
+            case JsonArray a:
+                foreach (var child in a) if (FindImage(child) is { } b) return b;
+                return null;
+            default: return null;
+        }
+    }
+
+    static byte[]? DecodeImage(string s)
+    {
+        var i = s.IndexOf("base64,", StringComparison.Ordinal);
+        if (s.StartsWith("data:image", StringComparison.OrdinalIgnoreCase) && i > 0) return TryBase64(s[(i + 7)..]);
+        // Bare base64 PNG ("iVBORw0KGgo") or JPEG ("/9j/").
+        if (s.StartsWith("iVBORw0KGgo", StringComparison.Ordinal) || s.StartsWith("/9j/", StringComparison.Ordinal)) return TryBase64(s);
+        // A JSON document inside a string.
+        if (s.Length > 1 && (s[0] == '{' || s[0] == '['))
+            try { return FindImage(JsonNode.Parse(s)); } catch { }
+        return null;
+    }
+
+    static byte[]? TryBase64(string s)
+    {
+        try { var b = Convert.FromBase64String(s.Trim()); return b.Length > 8 ? b : null; } catch { return null; }
     }
 
     public static bool SamePath(string a, string b)
