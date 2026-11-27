@@ -9,6 +9,7 @@ import { SHAREABLE_KINDS } from "@plm/shared";
 import { fileUrl, fmtAgo, fmtDate, fmtSize, get, patch, post } from "../api";
 import { Button, Card, Chip, Dialog, Empty, ErrorText, Field, Input, Select, Spinner, StateChip, Tabs, Textarea, Thumb, cx } from "../components/ui";
 import { LockChip } from "./Items";
+import { ItemCollections } from "./Collections";
 import { useMe } from "../session";
 import { toast, toastError } from "../toast";
 
@@ -86,18 +87,20 @@ export function ItemPage() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             {d.item.type === "assembly" ? <Boxes className="size-5 text-muted" /> : <Box className="size-5 text-muted" />}
-            <h1 className="mono text-2xl font-semibold">{d.item.number}</h1>
-            <span className="text-2xl font-light text-muted">–</span>
-            <h2 className="text-xl font-medium">{d.item.description}</h2>
+            <h1 className="mono text-xl font-semibold sm:text-2xl">{d.item.number}</h1>
+            <span className="hidden text-2xl font-light text-muted sm:inline">–</span>
+            <h2 className="text-lg font-medium sm:text-xl">{d.item.description}</h2>
             {canEdit && <button onClick={() => setDialog("rename")} className="rounded p-1 text-muted hover:bg-panel2" title="Rename"><Pencil className="size-3.5" /></button>}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            <Chip title={d.item.type === "assembly" ? "Contains other parts" : "A single part"}>{d.item.type === "assembly" ? <><Boxes className="size-3" />Assembly</> : <><Box className="size-3" />Part</>}</Chip>
             <Chip>rev <span className="mono">{latestRev.rev}</span></Chip>
             <StateChip state={latestRev.state} />
             {latestRev.frozen && <Chip color="#64748b">Frozen</Chip>}
             {d.lock ? <LockChip user={d.lock.user} since={d.lock.since} mine={mine} /> : <Chip color="#10b981"><LockOpen className="size-3" />Available</Chip>}
             {d.lock && <span className="text-xs text-muted">checked out {fmtAgo(d.lock.since)}{d.lock.machine ? ` on ${d.lock.machine}` : ""}</span>}
           </div>
+          <div className="mt-2"><ItemCollections itemId={itemId} /></div>
         </div>
         <div className="flex flex-wrap gap-2">
           {canEdit && !d.lock && !latestRev.frozen && <Button variant="primary" busy={busy} onClick={() => act(() => post(`items/${itemId}/checkout`, {}), "Checked out")}><Lock className="size-4" />Check out</Button>}
@@ -203,7 +206,7 @@ function History({ d, selectedId, onSelect }: { d: ItemDetail; selectedId?: stri
               {r.history.map((h, i) => <li key={i}><span className="text-muted">{fmtDate(h.at)}</span> · {h.by ?? "system"}: {h.from ? `${h.from} → ` : ""}<b>{h.to}</b> — {h.note}</li>)}
             </ul>
           )}
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
             <tbody>
               {r.baselines.map((b) => (
                 <tr key={b.id} onClick={() => onSelect(b.id)} className={cx("cursor-pointer border-b border-line last:border-0", b.id === selectedId ? "bg-accent/8" : "hover:bg-panel2")}>
@@ -215,7 +218,7 @@ function History({ d, selectedId, onSelect }: { d: ItemDetail; selectedId?: stri
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </Card>
       ))}
     </div>
@@ -228,7 +231,7 @@ function Contains({ itemId, baselineId }: { itemId: string; baselineId?: string 
   if (!data.children.length) return <Empty title="Uses no other parts">An assembly lists here the exact part baselines it links to (PhysCAD's Add to File, linked).</Empty>;
   return (
     <Card className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
         <thead className="border-b border-line text-left text-xs text-muted"><tr><th className="w-14 p-2"></th><th className="p-2">Part</th><th className="p-2">Pinned</th><th className="p-2">State</th><th className="p-2">Qty</th><th className="p-2">Newer</th></tr></thead>
         <tbody>
           {data.children.map((c: any) => (
@@ -245,7 +248,7 @@ function Contains({ itemId, baselineId }: { itemId: string; baselineId?: string 
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
     </Card>
   );
 }
@@ -290,7 +293,7 @@ function FilesTab({ d }: { d: ItemDetail }) {
   if (!rows.length) return <Empty title="No files yet" />;
   return (
     <Card className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
         <thead className="border-b border-line text-left text-xs text-muted"><tr><th className="p-2 pl-4">File</th><th className="p-2">Kind</th><th className="p-2">Baseline</th><th className="p-2">Size</th><th></th></tr></thead>
         <tbody>
           {rows.map((f) => (
@@ -301,7 +304,7 @@ function FilesTab({ d }: { d: ItemDetail }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
     </Card>
   );
 }
@@ -312,11 +315,11 @@ function Activity({ itemId }: { itemId: string }) {
   return (
     <Card className="divide-y divide-line">
       {data.map((a) => (
-        <div key={a.id} className="flex gap-3 px-4 py-2 text-sm">
-          <span className="w-36 shrink-0 text-xs text-muted">{fmtDate(a.at)}</span>
-          <span className="w-44 shrink-0 truncate">{a.actor}</span>
-          <span className="mono w-44 shrink-0 text-xs">{a.action}</span>
-          <span className="truncate text-xs text-muted">{Object.entries(a.details ?? {}).filter(([, v]) => v != null && v !== "").map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(" · ")}</span>
+        <div key={a.id} className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2 text-sm md:flex-nowrap">
+          <span className="shrink-0 text-xs text-muted md:w-36">{fmtDate(a.at)}</span>
+          <span className="shrink-0 truncate md:w-44">{a.actor}</span>
+          <span className="mono shrink-0 text-xs md:w-44">{a.action}</span>
+          <span className="w-full truncate text-xs text-muted md:w-auto">{Object.entries(a.details ?? {}).filter(([, v]) => v != null && v !== "").map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(" · ")}</span>
         </div>
       ))}
     </Card>

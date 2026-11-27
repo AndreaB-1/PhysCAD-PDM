@@ -67,3 +67,39 @@ export type UsesEntry = {
   itemId: string | null;
   baselineId: string | null;
 };
+
+// ---- catalogs and projects
+export const COLLECTION_KINDS = ["catalog", "project"] as const;
+export type CollectionKind = (typeof COLLECTION_KINDS)[number];
+export const PROJECT_STATUSES = ["planning", "active", "on_hold", "done"] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+export const collectionCreateSchema = z.object({
+  kind: z.enum(COLLECTION_KINDS),
+  name: z.string().trim().min(1).max(80),
+  description: z.string().max(2000).default(""),
+  color: hexColor.default("#64748b"),
+  parentId: z.string().uuid().nullable().default(null),
+  status: z.enum(PROJECT_STATUSES).nullable().optional(),
+});
+export const collectionUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(80).optional(),
+  description: z.string().max(2000).optional(),
+  color: hexColor.optional(),
+  parentId: z.string().uuid().nullable().optional(),
+  status: z.enum(PROJECT_STATUSES).nullable().optional(),
+});
+export const collectionItemsSchema = z.object({
+  itemIds: z.array(z.string().uuid()).min(1).max(500),
+  note: z.string().max(500).optional(),
+});
+export const collectionItemUpdateSchema = z.object({
+  note: z.string().max(500).optional(),
+  quantity: z.number().int().min(0).max(1_000_000).nullable().optional(),
+});
+export const projectDocSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  body: z.string().max(500_000).default(""),
+});
+export const projectDocUpdateSchema = projectDocSchema.partial().extend({ sort: z.number().int().optional() });

@@ -86,7 +86,7 @@ export function Dialog({ open, onClose, title, children, wide }: { open: boolean
   }, [open]);
   return (
     <dialog ref={ref} onClose={onClose} onCancel={onClose}
-      className={cx("m-auto rounded-xl border border-line bg-panel p-0 text-fg shadow-2xl", wide ? "w-[min(760px,94vw)]" : "w-[min(480px,94vw)]")}>
+      className={cx("m-auto max-h-[92dvh] overflow-y-auto rounded-xl border border-line bg-panel p-0 text-fg shadow-2xl", wide ? "w-[min(760px,94vw)]" : "w-[min(480px,94vw)]")}>
       {open && (
         <div>
           <div className="flex items-center justify-between border-b border-line px-5 py-3">

@@ -20,7 +20,7 @@ export function LockChip({ user, since, mine }: { user: string; since?: string |
 export function ItemsGrid({ items, view, meId }: { items: ListItem[]; view: "grid" | "table"; meId?: string }) {
   if (view === "table") return (
     <Card className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
         <thead className="border-b border-line text-left text-xs text-muted">
           <tr><th className="w-14 p-2"></th><th className="p-2">Number</th><th className="p-2">Description</th><th className="p-2">Rev</th><th className="p-2">State</th><th className="p-2">Latest</th><th className="p-2">Lock</th><th className="p-2">Updated</th></tr>
         </thead>
@@ -38,11 +38,11 @@ export function ItemsGrid({ items, view, meId }: { items: ListItem[]; view: "gri
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
     </Card>
   );
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(210px,1fr))] sm:gap-4">
       {items.map((i) => (
         <Link key={i.id} to="/items/$itemId" params={{ itemId: i.id }} className="group overflow-hidden rounded-lg border border-line bg-panel transition hover:border-accent/60 hover:shadow-md">
           <div className="relative">
@@ -51,7 +51,7 @@ export function ItemsGrid({ items, view, meId }: { items: ListItem[]; view: "gri
             {i.lockUser && <div className="absolute top-2 right-2 rounded-full bg-panel"><LockChip user={i.lockUser} mine={i.lockUserId === meId} /></div>}
           </div>
           <div className="space-y-0.5 border-t border-line p-3">
-            <div className="flex items-center gap-1.5"><span className="mono font-semibold group-hover:text-accent">{i.number}</span><span className="mono text-xs text-muted">rev {i.rev}</span>{i.type === "assembly" && <Boxes className="ml-auto size-3.5 text-muted" />}</div>
+            <div className="flex items-center gap-1.5"><span className="mono font-semibold group-hover:text-accent">{i.number}</span><span className="mono text-xs text-muted">rev {i.rev}</span>{i.type === "assembly" && <span title="Assembly: contains other parts" className="ml-auto flex items-center gap-1 rounded bg-accent/12 px-1.5 py-0.5 text-[11px] font-medium text-accent"><Boxes className="size-3" /><span className="hidden sm:inline">Assembly</span></span>}</div>
             <p className="truncate text-sm">{i.description}</p>
             <p className="text-xs text-muted">{fmtAgo(i.updatedAt)}</p>
           </div>

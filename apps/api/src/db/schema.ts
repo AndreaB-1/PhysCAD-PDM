@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, text, integer, boolean, timestamp, jsonb, bigserial, bigint, primaryKey, uniqueIndex, index,
+  pgTable, uuid, text, integer, boolean, timestamp, jsonb, bigserial, bigint, primaryKey, uniqueIndex, index, type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import type { UsesEntry } from "@plm/shared";
@@ -195,3 +195,54 @@ export const settings = pgTable("settings", {
   key: text("key").primaryKey(),
   value: jsonb("value").notNull(),
 });
+
+// ---- catalogs and projects ("collections"): folders of links to items, never copies
+
+export const collections = pgTable("collections", {
+  id: id(),
+  kind: text("kind").$type<"catalog" | "project">().notNull(),
+  parentId: uuid("parent_id").references((): AnyPgColumn => collections.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  color: text("color").notNull().default("#64748b"),
+  /** projects only: planning | active | on_hold | done */
+  status: text("status"),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("collections_parent").on(t.kind, t.parentId)]);
+
+export const collectionItems = pgTable("collection_items", {
+  collectionId: uuid("collection_id").notNull().references(() => collections.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
+  note: text("note").notNull().default(""),
+  quantity: integer("quantity"),
+  addedBy: uuid("added_by").references(() => users.id, { onDelete: "set null" }),
+  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.collectionId, t.itemId] }), index("collection_items_item").on(t.itemId)]);
+
+/** Project notes: Markdown pages written in the browser. */
+export const projectDocs = pgTable("project_docs", {
+  id: id(),
+  collectionId: uuid("collection_id").notNull().references(() => collections.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  sort: integer("sort").notNull().default(0),
+  updatedBy: text("updated_by"),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Any file attached to a project (manuals, receipts, photos…), stored under <vaults>/.plm-projects/. */
+export const projectFiles = pgTable("project_files", {
+  id: id(),
+  collectionId: uuid("collection_id").notNull().references(() => collections.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  relPath: text("rel_path").notNull(), // relative to <vaults>/.plm-projects
+  size: bigint("size", { mode: "number" }).notNull(),
+  sha256: text("sha256").notNull(),
+  mime: text("mime").notNull().default("application/octet-stream"),
+  note: text("note").notNull().default(""),
+  uploadedBy: text("uploaded_by"),
+  createdAt: createdAt(),
+}, (t) => [index("project_files_collection").on(t.collectionId)]);

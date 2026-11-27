@@ -127,7 +127,15 @@ async function requireMyLock(tx: Tx, itemId: string, user: User) {
   return lock;
 }
 
-export type IncomingFile = { kind: string; tmpPath: string; size: number; sha256: string };
+export type IncomingFile = { kind: string; tmpPath: string; size: number; sha256: string; fileName?: string; mime?: string };
+
+/** Number of linked PhysCAD parts in a .physcad file, whatever their names. */
+async function countLinks(nativeAbs: string): Promise<number> {
+  try {
+    const { refs, unresolved } = findLinkedParts(JSON.parse(await readFile(nativeAbs, "utf8")));
+    return refs.length + unresolved.length;
+  } catch { return 0; }
+}
 
 async function resolveUses(tx: Tx, vaultId: string, nativeAbs: string | null): Promise<UsesEntry[]> {
   if (!nativeAbs) return [];
@@ -179,6 +187,8 @@ export async function addBaseline(ctx: Ctx, user: User, itemId: string, incoming
     if (v.revScheme === "numeric" && seq > 999) throw conflict(`Revision ${rev.rev} has 999 baselines`);
     const label = baselineLabel(rev.rev, seq, v.revScheme);
     const uses = await resolveUses(tx, v.id, native.tmpPath);
+    // An item is an assembly as soon as it links other PhysCAD files, even ones outside the vault.
+    const isAssembly = uses.length > 0 || (await countLinks(native.tmpPath)) > 0;
     const [b] = await tx.insert(baselines).values({
       revisionId: rev.id, seq, label, status: opts.checkin ? "checked_in" : "wip",
       authorId: user.id, authorName: user.name, comment: opts.comment?.trim() ?? "", uses,
@@ -196,7 +206,7 @@ export async function addBaseline(ctx: Ctx, user: User, itemId: string, incoming
       await tx.insert(baselineUses).values({ baselineId: b!.id, childItemId: u.itemId, childBaselineId: u.baselineId, count: u.count })
         .onConflictDoUpdate({ target: [baselineUses.baselineId, baselineUses.childItemId], set: { count: sql`${baselineUses.count} + ${u.count}` } });
     }
-    await tx.update(items).set({ type: uses.length ? "assembly" : "part", updatedAt: new Date() }).where(eq(items.id, itemId));
+    await tx.update(items).set({ type: isAssembly ? "assembly" : "part", updatedAt: new Date() }).where(eq(items.id, itemId));
     if (opts.checkin && !opts.keepLock) await tx.delete(locks).where(eq(locks.itemId, lock.itemId));
     return { unchanged: false as const, item, baseline: b!, vault: v };
   });
