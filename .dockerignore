@@ -6,3 +6,5 @@ poc
 docs
 *.log
 .env
+apps/agent
+apps/physcad-plugin

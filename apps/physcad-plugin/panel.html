@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font: 13px system-ui, sans-serif; margin: 12px; color: var(--pc-text, #e5e7eb); }
+    h2 { font-size: 13px; margin: 0 0 6px; }
+    .muted { opacity: .7; font-size: 12px; }
+    .card { border: 1px solid rgba(127,127,127,.3); border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+    .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .out { background: #2563eb; color: #fff; } .ro { background: #6b7280; color: #fff; }
+    textarea { width: 100%; box-sizing: border-box; min-height: 64px; margin: 6px 0; }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .mono { font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 id="title">PLM Lite</h2>
+    <div id="state" class="muted">Loading…</div>
+  </div>
+  <div class="card" id="checkinCard" hidden>
+    <h2>Check in</h2>
+    <div class="muted">Saves are uploaded as you go. Checking in marks the last one as the version others get, and releases your lock.</div>
+    <textarea id="comment" placeholder="What changed?"></textarea>
+    <div class="actions"><button class="primary" id="checkin">Check in</button></div>
+  </div>
+  <div class="actions">
+    <button id="browser">Open in browser</button>
+    <button id="refresh">Refresh</button>
+    <button id="choose">Workspace…</button>
+  </div>
+  <p class="muted" id="ws"></p>
+  <script src="panel.js"></script>
+</body>
+</html>

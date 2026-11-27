@@ -9,7 +9,7 @@ Taken on 2026-11-27, using the plan's recommendations. Anything here can be revi
 | 3 | Database | **Postgres 16 in the stack.** | `docker-compose.yml` |
 | 4 | Where Docker runs | Works either way. On the NAS itself (vault = local path) is ideal. On another host, mount the share and keep `db-data` local. | README |
 | 5 | HTTPS on the LAN | Plain HTTP works to start; `APP_URL=https://…` behind a reverse proxy turns on Secure cookies and HSTS. HTTPS will be needed for passkeys and probably for `physcad.net.fetch`. | `config.ts` |
-| 6 | Agent technology | **Open.** The server API for it is done ([agent-api.md](agent-api.md)). | — |
+| 6 | Agent technology | **.NET 8 + Avalonia**, one self-contained file per OS (Windows, Linux, macOS), decided 2026-11-27. The plugin talks to it through files in `<workspace>/.plm/`. | `apps/agent`, `apps/physcad-plugin` |
 | 7 | Share link defaults | **STEP + PNG, 14 days, no password, at most 90 days**, never the native file by default. Admins can change them; only admins can make links that never expire. | Admin → Settings |
 | 8 | Product name | Working name **PLM Lite**. The repo is called PhysCAD-PDM: rename it before making it public. | — |
 

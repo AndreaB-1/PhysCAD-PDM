@@ -39,3 +39,8 @@ The web app links to `plmlite://open?server=<origin>&item=<itemId>&baseline=<bas
 - Never drive the person's PhysCAD from a background timer. Act only on save / check-in / a click.
 - Always close tabs by id.
 - Activate the root component (`component_activate {id:"root"}`) before `view_capture`.
+
+## Agent ↔ plugin, agent ↔ itself
+
+- The agent listens on `127.0.0.1:47180` only, to stay single-instance: a second launch for a `plmlite://` link hands the link to the running agent. `GET /status`, `POST /open {url}`, `POST /request {action, file, comment}`. Requests that carry a browser `Origin` are refused.
+- The PhysCAD plugin can't reach localhost, so it uses files in the workspace: the agent writes `.plm/status.json` (`{"<file name>": "<number>|<last baseline>"}`), and the plugin drops `.plm/requests/<id>.json` (`{action: "checkin" | "open-browser" | "saved", file, comment}`).

@@ -69,6 +69,8 @@ Tests run against a real Postgres. The test database is wiped on every run.
 |---|---|
 | `apps/api` | Fastify API, the worker (`ROLE=worker`: STEP→GLB, backups), Drizzle schema and migrations |
 | `apps/web` | React + Vite + TanStack Router/Query + Tailwind SPA, the three.js viewer |
+| `apps/agent` | the desktop agent: .NET 8 + Avalonia tray app for Windows, Linux and macOS ([README](apps/agent/README.md)) |
+| `apps/physcad-plugin` | PhysCAD plugin v2: the PLM Lite panel (check in, open in browser) |
 | `packages/shared` | zod schemas, revision/numbering helpers, `.physcad` link parsing |
 | `poc/` | the proof-of-concept plugin and PhysCAD's plugin guide, for reference |
 | `docs/` | plan, decisions, spikes, the agent/plugin API |
@@ -77,4 +79,4 @@ Schema change: edit `apps/api/src/db/schema.ts`, then `npm run db:generate`.
 
 ## Status
 
-Phases 0–2 of the plan, the server half of phase 3 and a first phase-4 viewer are done. Still to do: the **desktop agent** and **plugin v2** (see [docs/agent-api.md](docs/agent-api.md)), the PhysCAD **spikes** in [docs/spikes.md](docs/spikes.md) (they need PhysCAD on your PC), passkeys, notifications.
+Phases 0–2 of the plan, a first phase-4 viewer, and phase 3 are done: the desktop agent and plugin v2, tested against a fake PhysCAD. Still to do: trying the agent with the real PhysCAD, which settles the **spikes** in [docs/spikes.md](docs/spikes.md); *Insert part* and *Update to latest released*; passkeys; notifications.
