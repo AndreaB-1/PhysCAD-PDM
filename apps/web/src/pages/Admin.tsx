@@ -23,7 +23,7 @@ export function UsersPage() {
       <PageHeader title="Users" subtitle="People who can sign in. Give them a role per vault." actions={<Button variant="primary" onClick={() => setCreate(true)}><UserPlus className="size-4" />Add user</Button>} />
       {!users.data ? <Spinner /> : (
         <Card className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
             <thead className="border-b border-line text-left text-xs text-muted"><tr><th className="p-2 pl-4">Name</th><th className="p-2">Email</th><th className="p-2">2FA</th><th className="p-2">Vault roles</th><th className="p-2">Status</th><th></th></tr></thead>
             <tbody>
               {users.data.map((u) => (
@@ -37,7 +37,7 @@ export function UsersPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </Card>
       )}
       <CreateUser open={create} onClose={() => setCreate(false)} onDone={reload} />
@@ -274,7 +274,7 @@ export function AuditPage() {
         </Select>} />
       {!first.data ? <Spinner /> : (
         <Card className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
             <thead className="border-b border-line text-left text-xs text-muted"><tr><th className="p-2 pl-4">When</th><th className="p-2">Who</th><th className="p-2">Action</th><th className="p-2">Item</th><th className="p-2">Details</th><th className="p-2">IP</th></tr></thead>
             <tbody>
               {rows.map((a) => (
@@ -288,7 +288,7 @@ export function AuditPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           {rows.length >= 100 && <div className="p-3 text-center"><Button size="sm" onClick={more}>Load more</Button></div>}
         </Card>
       )}

@@ -15,6 +15,7 @@ import { adminRoutes } from "./routes/admin";
 import { vaultRoutes } from "./routes/vaults";
 import { itemRoutes } from "./routes/items";
 import { shareRoutes } from "./routes/shares";
+import { collectionRoutes } from "./routes/collections";
 
 export async function buildApp(ctx: Ctx, opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
   const app = Fastify({
@@ -81,6 +82,7 @@ export async function buildApp(ctx: Ctx, opts: { logger?: boolean } = {}): Promi
     await vaultRoutes(api, ctx);
     await itemRoutes(api, ctx);
     await shareRoutes(api, ctx);
+    await collectionRoutes(api, ctx);
   }, { prefix: "/api" });
 
   // Single-page app

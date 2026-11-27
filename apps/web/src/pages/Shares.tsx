@@ -23,7 +23,7 @@ export function SharesPage() {
       <ErrorText error={error} />
       {!data ? <Spinner /> : !data.length ? <Empty icon={<Link2 className="size-10" />} title="No shared links">Create one with <b>Share</b> on an item's page.</Empty> : (
         <Card className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
             <thead className="border-b border-line text-left text-xs text-muted"><tr><th className="p-2 pl-4">Item</th><th className="p-2">Points at</th><th className="p-2">Formats</th><th className="p-2">Downloads</th><th className="p-2">Expires</th><th className="p-2">Status</th>{all && <th className="p-2">By</th>}<th></th></tr></thead>
             <tbody>
               {data.map((s) => (
@@ -39,7 +39,7 @@ export function SharesPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </Card>
       )}
     </div>

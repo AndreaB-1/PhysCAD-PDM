@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate, useParams, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Box, ChevronDown, Clock, FileLock2, Link2, LogOut, Moon, Search, Settings, ShieldCheck, Sun, Users, Database, ScrollText, Star, User, Monitor } from "lucide-react";
+import { Box, ChevronDown, Clock, FileLock2, Link2, LogOut, Moon, Search, Settings, ShieldCheck, Sun, Users, Database, ScrollText, Star, User, Monitor, Library, FolderKanban, Menu, X } from "lucide-react";
 import { get, post } from "../api";
 import { useMe, useVaults } from "../session";
 import { cx, Spinner } from "./ui";
@@ -32,9 +32,9 @@ function GlobalSearch() {
       <Search className="absolute top-2.5 left-2.5 size-4 text-muted" />
       <input ref={ref} value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
         onKeyDown={(e) => { if (e.key === "Enter" && data?.[0]) { nav({ to: "/items/$itemId", params: { itemId: data[0].id } }); setOpen(false); setQ(""); } }}
-        placeholder="Search number or description…  (Ctrl K)" className="h-9 w-full rounded-md border border-line bg-panel2 pr-3 pl-8 text-sm outline-none focus:border-accent" />
+        placeholder="Search…" className="h-9 w-full rounded-md border border-line bg-panel2 pr-3 pl-8 text-sm outline-none focus:border-accent" />
       {open && q && data && (
-        <div className="absolute top-10 z-30 w-full overflow-hidden rounded-md border border-line bg-panel shadow-xl">
+        <div className="absolute top-10 z-30 w-[min(28rem,calc(100vw-1.5rem))] overflow-hidden rounded-md border border-line bg-panel shadow-xl">
           {data.length === 0 && <p className="px-3 py-2 text-sm text-muted">No matches</p>}
           {data.map((r) => (
             <button key={r.id} onMouseDown={() => { nav({ to: "/items/$itemId", params: { itemId: r.id } }); setQ(""); }}
@@ -57,6 +57,8 @@ export function AppLayout() {
   const params = useParams({ strict: false }) as { vaultId?: string };
   const [theme, setTheme] = useTheme();
   const [menu, setMenu] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  useEffect(() => setDrawer(false), [path, search]);
 
   useEffect(() => {
     if (!me.data) return;
@@ -74,10 +76,13 @@ export function AppLayout() {
 
   return (
     <div className="flex h-full">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-panel">
+      {drawer && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setDrawer(false)} />}
+      <aside className={cx("flex w-64 shrink-0 flex-col border-r border-line bg-panel lg:static lg:w-60 lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 transition-transform", drawer ? "translate-x-0 shadow-2xl" : "-translate-x-full")}>
         <div className="flex h-14 items-center gap-2 border-b border-line px-4">
           <img src="/favicon.svg" className="size-7" alt="" />
           <span className="font-semibold tracking-tight">PLM Lite</span>
+          <button onClick={() => setDrawer(false)} className="ml-auto rounded p-1.5 text-muted hover:bg-panel2 lg:hidden" aria-label="Close menu"><X className="size-4" /></button>
         </div>
         <div className="p-3">
           <select value={currentVault?.id ?? ""} onChange={(e) => { try { localStorage.setItem("vault", e.target.value); } catch { /* */ } nav({ to: "/v/$vaultId", params: { vaultId: e.target.value } }); }}
@@ -93,6 +98,9 @@ export function AppLayout() {
             <NavItem to="/v/$vaultId" params={{ vaultId: currentVault.id }} search={{ filter: "released" }} icon={<Star />} active={path === vaultBase && search.filter === "released"}>Released</NavItem>
             <NavItem to="/v/$vaultId" params={{ vaultId: currentVault.id }} search={{ filter: "locked" }} icon={<FileLock2 />} active={path === vaultBase && search.filter === "locked"}>Checked out</NavItem>
           </>}
+          <div className="pt-3 pb-1 pl-2.5 text-[11px] font-semibold tracking-wider text-muted uppercase">Organise</div>
+          <NavItem to="/catalogs" icon={<Library />} active={path.startsWith("/catalogs")}>Catalogs</NavItem>
+          <NavItem to="/projects" icon={<FolderKanban />} active={path.startsWith("/projects")}>Projects</NavItem>
           <div className="pt-3 pb-1 pl-2.5 text-[11px] font-semibold tracking-wider text-muted uppercase">You</div>
           <NavItem to="/checkouts" icon={<FileLock2 />} active={path === "/checkouts"}>My check-outs</NavItem>
           <NavItem to="/shares" icon={<Link2 />} active={path === "/shares"}>Shared links</NavItem>
@@ -107,7 +115,8 @@ export function AppLayout() {
         <div className="border-t border-line p-3 text-xs text-muted">v0.1.0</div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-panel px-5">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-panel px-3 sm:gap-3 sm:px-5">
+          <button onClick={() => setDrawer(true)} className="rounded-md p-2 text-muted hover:bg-panel2 lg:hidden" aria-label="Menu"><Menu className="size-5" /></button>
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-1">
             <button title="Theme" onClick={() => setTheme(theme === "dark" ? "light" : theme === "light" ? "system" : "dark")} className="rounded-md p-2 text-muted hover:bg-panel2">
@@ -116,7 +125,7 @@ export function AppLayout() {
             <div className="relative">
               <button onClick={() => setMenu(!menu)} onBlur={() => setTimeout(() => setMenu(false), 150)} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-panel2">
                 <span className="flex size-7 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-fg">{user.name.slice(0, 1).toUpperCase()}</span>
-                <span className="text-sm">{user.name}</span><ChevronDown className="size-3.5 text-muted" />
+                <span className="hidden text-sm sm:inline">{user.name}</span><ChevronDown className="size-3.5 text-muted" />
               </button>
               {menu && (
                 <div className="absolute right-0 z-30 mt-1 w-52 overflow-hidden rounded-md border border-line bg-panel py-1 shadow-xl">
@@ -128,7 +137,7 @@ export function AppLayout() {
             </div>
           </div>
         </header>
-        <main className="min-h-0 flex-1 overflow-y-auto p-6"><Outlet /></main>
+        <main className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-6"><Outlet /></main>
       </div>
     </div>
   );

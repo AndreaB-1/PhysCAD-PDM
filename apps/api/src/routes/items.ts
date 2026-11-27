@@ -19,7 +19,7 @@ import { openRead, safeJoin } from "../lib/storage";
 
 const agentOpts = z.object({ machine: z.string().max(100).optional(), workspacePath: z.string().max(500).optional() });
 
-const LIST_SQL = (where: ReturnType<typeof sql>, order: ReturnType<typeof sql>, limit: number, offset: number) => sql`
+export const LIST_SQL = (where: ReturnType<typeof sql>, order: ReturnType<typeof sql>, limit: number, offset: number) => sql`
   select i.id, i.number, i.description, i.type, i.updated_at as "updatedAt", i.vault_id as "vaultId",
          l.user_id as "lockUserId", lu.name as "lockUser", l.created_at as "lockSince",
          r.rev, r.frozen, s.name as "stateName", s.color as "stateColor", s.is_release as "stateIsRelease",

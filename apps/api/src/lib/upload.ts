@@ -27,7 +27,7 @@ export async function readMultipart(req: FastifyRequest, tmpRoot: string) {
         for await (const chunk of src) { size += chunk.length; hash.update(chunk); yield chunk; }
       }, createWriteStream(tmpPath));
       if (part.file.truncated) { await rm(tmpPath, { force: true }); throw badRequest("File too large"); }
-      incoming.push({ kind: part.fieldname, tmpPath, size, sha256: hash.digest("hex") });
+      incoming.push({ kind: part.fieldname, tmpPath, size, sha256: hash.digest("hex"), fileName: part.filename, mime: part.mimetype });
     }
   } catch (e) {
     await cleanup(incoming);
