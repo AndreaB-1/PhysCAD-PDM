@@ -29,7 +29,7 @@ COPY --from=build /src/apps/api/dist ./dist
 COPY --from=build /src/apps/api/drizzle ./drizzle
 COPY --from=build /src/apps/api/package.json ./
 COPY --from=build /src/apps/web/dist /app/web
-RUN mkdir -p /vaults /data && chown node:node /data
+RUN mkdir -p /vaults /data && chown node:node /vaults /data
 USER node
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD wget -qO- http://127.0.0.1:8080/healthz || exit 1

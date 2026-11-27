@@ -1,0 +1,64 @@
+# PLM Lite: TEST stack for Portainer (Stacks → Add stack → Web editor).
+# Vaults live in a Docker volume on this host instead of the NAS.
+# For the NAS later, see the main docker-compose.yml (VAULTS_PATH bind mount).
+#
+# Environment variables to set in Portainer (Advanced mode lets you paste them):
+#   APP_URL=http://<docker-host-ip>:8080
+#   SESSION_SECRET=<64 random hex characters>
+#   DB_PASSWORD=<random>
+name: plm-lite-test
+
+services:
+  app:
+    image: ghcr.io/andreab-1/physcad-pdm:latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "8080:8080"
+    environment: &env
+      ROLE: app
+      APP_URL: ${APP_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      DB_HOST: db
+      DB_NAME: plm
+      DB_USER: plm
+      DB_PASSWORD: ${DB_PASSWORD}
+      TZ: Europe/Rome
+    volumes:
+      - vaults:/vaults
+      - app-data:/data
+
+  worker:
+    image: ghcr.io/andreab-1/physcad-pdm:latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      app: { condition: service_started }
+    environment:
+      <<: *env
+      ROLE: worker
+    volumes:
+      - vaults:/vaults
+      - app-data:/data
+    healthcheck: { disable: true }
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: plm
+      POSTGRES_USER: plm
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plm -d plm"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  vaults:
+  app-data:
+  db-data:

@@ -17,6 +17,8 @@ The plan, decisions and everything learned about PhysCAD's plugin and MCP APIs a
 
 ## Deploy in Portainer
 
+**Just testing?** Use [`deploy/portainer-test-stack.yml`](deploy/portainer-test-stack.yml): vaults live in a Docker volume, and only `APP_URL`, `SESSION_SECRET` and `DB_PASSWORD` need setting. The steps below are for the real setup with vaults on the NAS.
+
 1. **Stacks → Add stack**, paste [`docker-compose.yml`](docker-compose.yml).
 2. Set the environment variables (see [`.env.example`](.env.example)):
 
