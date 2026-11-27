@@ -35,6 +35,11 @@ function shareState(s: Share | undefined) {
 }
 
 export async function shareRoutes(app: FastifyInstance, ctx: Ctx) {
+  app.get("/shares/defaults", async (req) => {
+    requireUser(req);
+    return (await getSettings(ctx.db)).shareDefaults;
+  });
+
   app.post("/shares", async (req) => {
     const body = shareCreateSchema.parse(req.body);
     const item = await getItem(ctx.db, body.itemId);

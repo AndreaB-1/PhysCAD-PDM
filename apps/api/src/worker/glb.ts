@@ -57,7 +57,10 @@ export function meshesToGlb(meshes: OcctMesh[]): Buffer {
     }
     const idx = Uint32Array.from(m.index.array);
     accessors.push({ bufferView: push(Buffer.from(idx.buffer), 34963), componentType: 5125, count: idx.length, type: "SCALAR" });
-    const c = m.color ?? [0.7, 0.72, 0.75];
+    // occt gives 0..1 colours; a missing or (near-)black colour becomes neutral grey so shading stays readable
+    let c: number[] = m.color ? [...m.color] : [0.7, 0.72, 0.75];
+    if (c.some((x) => x > 1)) c = c.map((x) => x / 255);
+    if (c[0]! + c[1]! + c[2]! < 0.09) c = [0.7, 0.72, 0.75];
     materials.push({ pbrMetallicRoughness: { baseColorFactor: [c[0], c[1], c[2], 1], metallicFactor: 0.1, roughnessFactor: 0.6 }, doubleSided: true });
     gltfMeshes.push({ name: m.name, primitives: [{ attributes, indices: accessors.length - 1, material: materials.length - 1 }] });
     nodes.push({ mesh: gltfMeshes.length - 1, name: m.name || `Body ${nodes.length + 1}` });
