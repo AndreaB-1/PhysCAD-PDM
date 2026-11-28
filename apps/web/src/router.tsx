@@ -5,6 +5,7 @@ import { Empty, Spinner, Button } from "./components/ui";
 import { DevicePage, EnrollPage, LoginPage, SetupPage } from "./pages/Auth";
 import { CheckoutsPage, ItemsPage } from "./pages/Items";
 import { ItemPage } from "./pages/Item";
+import { CatalogsPage, ProjectsPage } from "./pages/Collections";
 import { PublicSharePage, SharesPage } from "./pages/Shares";
 import { AccountPage } from "./pages/Account";
 import { AuditPage, SettingsPage, UsersPage, VaultSettingsPage, VaultsPage } from "./pages/Admin";
@@ -40,6 +41,10 @@ const routes = [
     createRoute({ getParentRoute: () => app, path: "/", component: Home }),
     createRoute({ getParentRoute: () => app, path: "/v/$vaultId", component: ItemsPage }),
     createRoute({ getParentRoute: () => app, path: "/items/$itemId", component: ItemPage }),
+    createRoute({ getParentRoute: () => app, path: "/catalogs", component: CatalogsPage }),
+    createRoute({ getParentRoute: () => app, path: "/catalogs/$collectionId", component: CatalogsPage }),
+    createRoute({ getParentRoute: () => app, path: "/projects", component: ProjectsPage }),
+    createRoute({ getParentRoute: () => app, path: "/projects/$collectionId", component: ProjectsPage }),
     createRoute({ getParentRoute: () => app, path: "/checkouts", component: CheckoutsPage }),
     createRoute({ getParentRoute: () => app, path: "/shares", component: SharesPage }),
     createRoute({ getParentRoute: () => app, path: "/account", component: AccountPage }),
