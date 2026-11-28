@@ -167,6 +167,11 @@ sealed class SettingsWindow : Window
         links.Click += (_, _) => { try { Toast.Show(UrlScheme.Register(), NoticeLevel.Success); } catch (Exception e) { Toast.Show(e.Message, NoticeLevel.Error); } };
         autostart.IsCheckedChanged += (_, _) => { try { UrlScheme.EnableAutostart(autostart.IsChecked == true); } catch (Exception e) { Toast.Show(e.Message, NoticeLevel.Error); } };
         close.Click += (_, _) => Close();
+        var web = Ui.Button("Open web app");
+        web.IsVisible = cfg.SignedIn;
+        web.Click += (_, _) => AgentService.OpenUrl(cfg.ServerUrl);
+        var quit = Ui.Button("Quit agent");
+        quit.Click += (_, _) => (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
 
         var welcome = Ui.Label("Welcome! Enter the address of your PLM Lite server and sign in. Your browser opens to approve this computer.");
         welcome.IsVisible = firstRun;
@@ -185,7 +190,7 @@ sealed class SettingsWindow : Window
                     Row(wsBox, browse),
                     Section("PhysCAD"), Ui.Label("MCP port (leave empty to use PhysCAD's setting)", true), Row(portBox, test), mcpStatus,
                     Section("This computer"), links, autostart,
-                    Ui.Buttons(close),
+                    Ui.Buttons(quit, web, close),
                 },
             },
         };

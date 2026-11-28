@@ -26,6 +26,7 @@ public static class Program
         if (LocalServer.IsRunning().GetAwaiter().GetResult())
         {
             if (url is not null) LocalServer.SendToRunning(url).GetAwaiter().GetResult();
+            else if (!args.Contains("--tray")) LocalServer.ShowRunning().GetAwaiter().GetResult();
             return 0;
         }
         App.StartupUrl = url;

@@ -32,6 +32,7 @@ public sealed class App : Application
         agent.Notice += (text, level) => Dispatcher.UIThread.Post(() => Toast.Show(text, level));
         agent.Changed += () => Dispatcher.UIThread.Post(RebuildMenu);
         server = LocalServer.TryStart(agent);
+        if (server is not null) server.ShowRequested += () => Dispatcher.UIThread.Post(() => ShowSettings(false));
         agent.StartWatching();
 
         tray = new TrayIcon { ToolTipText = "PLM Lite Agent", Icon = Icon("tray"), IsVisible = true };
@@ -41,7 +42,13 @@ public sealed class App : Application
 
         // macOS delivers plmlite:// links as an activation, not as a command-line argument.
         if (TryGetFeature(typeof(IActivatableLifetime)) is IActivatableLifetime act)
-            act.Activated += (_, e) => { if (e is ProtocolActivatedEventArgs p && p.Kind == ActivationKind.OpenUri) Run(() => agent.HandleUrl(p.Uri.ToString())); };
+            act.Activated += (_, e) =>
+            {
+                if (e is ProtocolActivatedEventArgs p && p.Kind == ActivationKind.OpenUri) Run(() => agent.HandleUrl(p.Uri.ToString()));
+                // Opening the app again (Finder, Launchpad, Spotlight) while it runs: it has no Dock icon
+                // and the menu bar icon can hide behind the notch, so show the window.
+                else if (e.Kind == ActivationKind.Reopen) Dispatcher.UIThread.Post(() => ShowSettings(false));
+            };
 
         if (!agent.Config.SignedIn) Dispatcher.UIThread.Post(() => ShowSettings(firstRun: true));
         else _ = Task.Run(async () => { try { await agent.Reconcile(); } catch { /* offline */ } });
@@ -121,7 +128,17 @@ public sealed class App : Application
         else ShowSettings(false);
     }
 
-    void ShowSettings(bool firstRun) => new SettingsWindow(agent, firstRun, Run).Show();
+    SettingsWindow? settings;
+
+    /// <summary>Show the settings window, or bring the open one to the front.</summary>
+    void ShowSettings(bool firstRun)
+    {
+        if (settings is { IsVisible: true }) { settings.Activate(); return; }
+        settings = new SettingsWindow(agent, firstRun, Run);
+        settings.Closed += (_, _) => settings = null;
+        settings.Show();
+        settings.Activate();
+    }
 
     async void CheckinDialog(WorkingCopy c)
     {

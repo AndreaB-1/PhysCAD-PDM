@@ -12,6 +12,7 @@ namespace PlmAgent.Core;
 ///   GET  /status            → {"ok":true,...}
 ///   POST /open   {url}      → handle a plmlite:// link
 ///   POST /request {action,file,comment}  → same as a request file from the plugin
+///   POST /show              → bring up the agent's window (someone launched the app again)
 /// </summary>
 public sealed class LocalServer : IDisposable
 {
@@ -43,6 +44,20 @@ public sealed class LocalServer : IDisposable
             var body = JsonSerializer.Serialize(new Dictionary<string, string> { ["url"] = url }, AgentJson.Default.DictionaryStringString);
             var res = await http.PostAsync($"http://127.0.0.1:{port}/open", new StringContent(body, Encoding.UTF8, "application/json"));
             return res.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
+    /// <summary>Raised when another launch asks the running agent to show itself.</summary>
+    public event Action? ShowRequested;
+
+    /// <summary>Ask the running agent to show its window. False if none is running.</summary>
+    public static async Task<bool> ShowRunning(int port = DefaultPort)
+    {
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            return (await http.PostAsync($"http://127.0.0.1:{port}/show", new StringContent(""))).IsSuccessStatusCode;
         }
         catch { return false; }
     }
@@ -93,6 +108,12 @@ public sealed class LocalServer : IDisposable
                 if (string.IsNullOrEmpty(url)) { await Write(stream, 400, "{\"error\":\"url missing\"}"); return; }
                 await Write(stream, 202, "{\"ok\":true}");
                 _ = Task.Run(async () => { try { await agent.HandleUrl(url); } catch (Exception e) { agent.RaiseError(e.Message); } });
+                return;
+            }
+            if (method == "POST" && path == "/show")
+            {
+                await Write(stream, 200, "{\"ok\":true}");
+                ShowRequested?.Invoke();
                 return;
             }
             if (method == "POST" && path == "/request")

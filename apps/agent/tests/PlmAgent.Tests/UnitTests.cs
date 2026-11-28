@@ -99,3 +99,22 @@ public class McpTests
         Assert.False(await pc.IsRunning());
     }
 }
+
+public class LocalServerTests
+{
+    [Fact]
+    public async Task ASecondLaunchAsksTheRunningAgentToShowItself()
+    {
+        var root = Directory.CreateTempSubdirectory().FullName;
+        Environment.SetEnvironmentVariable("PLM_AGENT_HOME", Path.Combine(root, "home"));
+        using var agent = new AgentService(new AgentConfig { Workspace = Path.Combine(root, "ws") }, new PhysCad(new McpClient(1)));
+        var port = 47900 + Random.Shared.Next(90);
+        using var server = LocalServer.TryStart(agent, port)!;
+        var shown = new TaskCompletionSource();
+        server.ShowRequested += () => shown.TrySetResult();
+        Assert.True(await LocalServer.IsRunning(port));
+        Assert.True(await LocalServer.ShowRunning(port));
+        await shown.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Null(LocalServer.TryStart(agent, port)); // single instance
+    }
+}
